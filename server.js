@@ -1,11 +1,11 @@
 const express = require('express')
 const graphqlHTTP = require('express-graphql')
+const schema = require('./schema')
 const app = express()
 
 //SCHEMA
 //Contains types and all info on HOW to get data.
 //Where the magic happens.
-const schema = require('./schema')
 
 app.use('/graphql', graphqlHTTP({
     schema,
