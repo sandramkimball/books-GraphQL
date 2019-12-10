@@ -27,6 +27,13 @@ function translate(lang, str) {
       )
   }
 
+const fetchAuthor = id => {
+    fetch(`https://www.goodreads.com/author/show.xml?id=${id}&key=x7VoLKspIa5LO9bMmwxvIw`
+    )
+    .then(res=> res.text())
+    .then(parseXML)
+}
+
   //Object Types
 const BookType = new GraphQLObjectType({
     name: 'Book',
@@ -39,10 +46,20 @@ const BookType = new GraphQLObjectType({
             return ars.lang ? translate(args.lang, title) : title
             }
         },
+
         isbn: {
             type: GraphQLString,
             resolve: xml=>xml.isbn[0]
-        }
+        },
+
+        authors: {
+            type: new GraphQLList(AuthorType),
+            resolve: xml=>{
+            //returns array of strings
+            const authorElements= xml.GoodreadsResponse.book[0].authors[0].author
+            const ids = authorElements.map(elem=> elem.id[0])
+            return Promise.all(ids.map(fetchAuthor))
+        }}
     })
 });
 
@@ -62,7 +79,7 @@ const AuthorType = new GraphQLObjectType({
                 console.log('Fetching Books!')
                     return Promise.all(ids.map(id=> 
                     //then for each id extract the book info and eventually passed into each BookType
-                    fetch(`https://www.goodreads.com/book/show${id}.xml?key=42tmzmwXfJJzHcbXlBRg`)
+                    fetch(`https://www.goodreads.com/book/show${id}.xml?key=x7VoLKspIa5LO9bMmwxvIw`)
                     .then(res=> res.text())
                     .then(parseXML)
                 ))
@@ -84,11 +101,7 @@ module.epxorts = new GraphQLSchema({
                     id: {type: GraphQLInt}
                 },
                 //function GQL used to fetch data for the author
-                resolve: (root, args) => 
-                    fetch(`https://www.goodreads.com/author/show.xml?id=${args.id}&key=risKm8wwXsIcyEiTktvA`
-                    )
-                    .then(res=> res.text())
-                    .then(parseXML)
+                resolve: (root, args) => fetchAuthor(args.id)
             }
         })
     })
