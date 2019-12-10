@@ -32,8 +32,17 @@ const AuthorType = new GraphQLObjectType({
             resolve: xml => xml.GoodreadsResponse.author[0].name[0]
         },
         books: {
-            type: GraphQLList(BookType),
-            resolve: xml => xml.GoodreadsResponse.author[0].books[0].book[0]
+            type: new GraphQLList(BookType),
+            resolve: xml => {
+                //this grabs data from parent element and extracts the ids.
+                const ids = xml.GoodreadsResponse.author[0].books[0].book.map(elem=> elem.id[0]._)
+                return Promise.all(ids.map(id=> 
+                    //then for each id extract the book info
+                    fetch(`https://www.goodreads.com/book/show${id}.xml?key=42tmzmwXfJJzHcbXlBRg`)
+                    .then(res=> res.text())
+                    .then(parseXML)
+                ))
+            }
         },
     })
 });
